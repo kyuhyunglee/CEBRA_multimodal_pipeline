@@ -1,5 +1,10 @@
 # 입력 차원, Batch size, 타임 윈도우, Loss 가중치 등
 # cebra_multimodal_pipeline/configs/default_config.yaml
+environment: "colab"
+
+paths:
+  steinmetz_data: "/content/drive/MyDrive/cebra_data/raw/steinmetz/"
+  pretrained_weights: "/content/drive/MyDrive/cebra_data/weights/"
 
 experiment:
   name: "2-afc_decision_making"
@@ -8,10 +13,15 @@ experiment:
 data:
   probe_input_dim: 250
   calcium_input_dim: 150
-  time_window: 10
+  time_window: 10          # 한 번에 볼 시계열 윈도우 크기 (bins)
+  time_shift_ms: 500
+  
+model:
+  hidden_dim: 64
+  latent_dim: 16           # 최종 초구면(Hypersphere) 벡터 공간 차원
+  temperature: 0.1         # InfoNCE Loss의 온도 매개변수       # 500ms 전의 preparatory activity 추출
   
 training:
   batch_size: 512
   learning_rate: 0.001
   epochs: 100
-  temperature: 0.1
