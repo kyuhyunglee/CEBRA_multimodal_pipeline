@@ -1,0 +1,37 @@
+# 1. Python & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# 2. PyTorch & Model Weights
+*.pth
+*.pt
+*.ckpt
+models/pretrained_weights/*
+!models/pretrained_weights/.gitkeep
+
+# 3. Data & Preprocessed Files (Git에 올리지 않고 Google Drive 사용)
+*.npy
+*.npz
+*.h5
+*.mat
+data/raw/*
+data/preprocessed/*
+!data/raw/.gitkeep
+!data/preprocessed/.gitkeep
+
+# 4. Google Colab & Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# 5. OS Generated Files
+.DS_Store
+Thumbs.db
+
+# 6. Environment & Logs
+.env
+venv/
+env/
+logs/
+runs/
