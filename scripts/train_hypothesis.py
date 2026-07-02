@@ -24,7 +24,7 @@ def run_hypothesis_training():
         batch_size=config['training']['batch_size'],
         learning_rate=config['training']['learning_rate'],
         max_iterations=config['training'].get('epochs', 1000),
-        device='cuda' if cebra.utils.is_gpu_available() else 'cpu'
+        device='cuda_if_available'
     )
 
     # 2. Hypothesis-driven mode: 신경 데이터(s)와 행동 라벨(k) 전달

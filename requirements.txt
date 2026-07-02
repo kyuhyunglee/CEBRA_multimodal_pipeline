@@ -1,21 +1,5 @@
 # Core Model
 cebra==0.4.0
 
-# Neuroscience Data Access & Formats
-allensdk
-pynwb
-dandi
-h5py
-
-# Data Manipulation
-numpy
-pandas
-scipy
-
 # Experiment Configuration
 pyyaml
-
-# Evaluation & Visualization
-scikit-learn
-matplotlib
-seaborn
