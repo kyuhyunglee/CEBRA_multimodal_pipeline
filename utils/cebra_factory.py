@@ -75,22 +75,23 @@ def build_cebra_model(config: dict, session_metadata: Sequence[dict] | None = No
     if conditional == "behavior":
         conditional = "time_delta"
     session_architectures = _session_architectures(config, session_metadata)
-    cebra_class = (
-        _modality_aware_cebra_class()
-        if session_architectures is not None
-        else cebra.CEBRA
-    )
-    return cebra_class(
-        model_architecture=model_config.get("architecture", "offset10-model"),
-        output_dimension=model_config["output_dimension"],
-        num_hidden_units=model_config.get("hidden_dim", 32),
-        batch_size=training_config["batch_size"],
-        learning_rate=training_config["learning_rate"],
-        max_iterations=training_config["max_iterations"],
-        temperature=model_config.get("temperature", 1.0),
-        distance=model_config.get("distance", "cosine"),
-        conditional=conditional,
-        device=configured_device(config),
+    cebra_kwargs = {
+        "model_architecture": model_config.get("architecture", "offset10-model"),
+        "output_dimension": model_config["output_dimension"],
+        "num_hidden_units": model_config.get("hidden_dim", 32),
+        "batch_size": training_config["batch_size"],
+        "learning_rate": training_config["learning_rate"],
+        "max_iterations": training_config["max_iterations"],
+        "temperature": model_config.get("temperature", 1.0),
+        "distance": model_config.get("distance", "cosine"),
+        "conditional": conditional,
+        "device": configured_device(config),
+    }
+    if session_architectures is None:
+        return cebra.CEBRA(**cebra_kwargs)
+
+    return _modality_aware_cebra_class()(
+        **cebra_kwargs,
         session_architectures=session_architectures,
     )
 
