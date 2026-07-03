@@ -52,6 +52,34 @@ def _save_training_cache(
     )
 
 
+def _validate_cross_modal_joint_sessions(
+    requested_modalities: list[str],
+    session_metadata: list[dict],
+) -> None:
+    loaded_modalities = sorted({metadata["modality"] for metadata in session_metadata})
+    requested_unique = sorted(set(requested_modalities))
+    missing_modalities = sorted(set(requested_unique) - set(loaded_modalities))
+
+    if len(requested_unique) < 2:
+        raise ValueError(
+            "train_joint.py is reserved for cross-modality joint training. "
+            "Configure at least two modalities, such as ['probe', 'calcium']. "
+            "Use scripts/train_unimodal.py for single-modality training."
+        )
+    if missing_modalities:
+        raise FileNotFoundError(
+            "Cross-modality joint training requires every requested modality to "
+            f"be present in the preprocessed dataset. Missing: {missing_modalities}. "
+            f"Loaded modalities: {loaded_modalities}."
+        )
+    if len(loaded_modalities) < 2:
+        raise ValueError(
+            "Cross-modality joint training needs at least two loaded modalities. "
+            f"Loaded modalities: {loaded_modalities}. "
+            "Use scripts/train_unimodal.py for single-modality training."
+        )
+
+
 def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
     _log(f"Loading config: {config_path}")
     config = load_config(config_path)
@@ -82,6 +110,10 @@ def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
         time_shift_bins=dataset_config.get("time_shift_bins", 0),
         normalize=True,
     )
+    _validate_cross_modal_joint_sessions(
+        requested_modalities=dataset_config["modalities"],
+        session_metadata=session_metadata,
+    )
     total_samples = sum(len(features) for features in feature_sessions)
     total_features = sum(features.shape[1] for features in feature_sessions)
     _log(
@@ -107,8 +139,12 @@ def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
     )
     _log(f"Saved training cache: {model_dir / 'joint_training_cache.npz'}")
 
-    _log("Building CEBRA model.")
-    model = build_cebra_model(config)
+    _log("Building modality-aware CEBRA model.")
+    model = build_cebra_model(config, session_metadata=session_metadata)
+    session_architectures = getattr(model, "session_architectures", None)
+    if session_architectures is not None:
+        for idx, architecture in enumerate(session_architectures):
+            _log(f"session_{idx:03d}: architecture={architecture}")
     has_labels = continuous_label_sessions is not None or discrete_label_sessions is not None
     should_use_labels = has_labels if use_labels is None else use_labels
     if (
@@ -139,7 +175,7 @@ def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
 
     _log("CEBRA fit finished. Saving model.")
     save_path = model_dir / "joint_cebra_model.pt"
-    model.save(save_path)
+    model.save(save_path, backend="torch")
     _log(f"Saved joint CEBRA model: {save_path}")
     _log(f"Saved session metadata: {model_dir / 'joint_training_sessions.json'}")
     return save_path

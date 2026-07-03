@@ -39,6 +39,11 @@ preprocessing:
 
 model:
   architecture: offset10-model
+  # Joint training can choose a different CEBRA encoder architecture per
+  # modality. These names are passed to cebra.models.init for each session.
+  architecture_by_modality:
+    probe: offset10-model
+    calcium: offset10-model
   hidden_dim: 64
   latent_dim: 16
   output_dimension: 8
@@ -49,7 +54,8 @@ training:
   batch_size: 128
   learning_rate: 0.0003
   max_iterations: 500
-  # "behavior" uses shared labels such as DINO video features.
+  # "behavior" is accepted by this project and mapped to CEBRA's "time_delta"
+  # sampler, which uses shared continuous behavior/video labels.
   # "time" can be used for CEBRA-Time style training when labels are omitted.
   conditional: behavior
   device: auto

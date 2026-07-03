@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 import numpy as np
 
 from dataloaders.multimodal_dataset import build_session_windows, load_modality_session
+from utils.cebra_factory import load_cebra_model
 from utils.config import configured_subject_ids, ensure_dir, load_config, resolve_project_path
 
 
@@ -53,14 +54,7 @@ def embed_subject(
         else model_dir / "joint_cebra_model.pt"
     )
 
-    import cebra
-
-    try:
-        model = cebra.CEBRA.load(model_path)
-    except Exception as exc:
-        if "Weights only load failed" not in str(exc):
-            raise
-        model = cebra.CEBRA.load(model_path, weights_only=False)
+    model = load_cebra_model(model_path)
     outputs = []
     for current_modality in modalities:
         session = load_modality_session(preprocessed_dir, subject_id, current_modality)
