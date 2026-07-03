@@ -13,7 +13,7 @@ import numpy as np
 
 from dataloaders.multimodal_dataset import load_joint_training_sessions
 from utils.cebra_factory import build_cebra_model, fit_cebra_model
-from utils.config import ensure_dir, load_config, resolve_project_path
+from utils.config import configured_subject_ids, ensure_dir, load_config, resolve_project_path
 
 
 def _save_training_cache(
@@ -61,7 +61,7 @@ def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
         session_metadata,
     ) = load_joint_training_sessions(
         preprocessed_dir=preprocessed_dir,
-        subject_ids=dataset_config["target_subjects"],
+        subject_ids=configured_subject_ids(config),
         modalities=dataset_config["modalities"],
         window_bins=dataset_config["time_window_bins"],
         time_shift_bins=dataset_config.get("time_shift_bins", 0),
@@ -96,7 +96,7 @@ def train_joint(config_path: str, use_labels: bool | None = None) -> Path:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train CEBRA jointly across independent probe/calcium sessions."
+        description="Train CEBRA jointly across independent sessions."
     )
     parser.add_argument("--config", default="configs/default_config.yaml")
     parser.add_argument(

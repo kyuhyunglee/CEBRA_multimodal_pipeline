@@ -1,44 +1,42 @@
-# CEBRA Multimodal Pipeline
+# CEBRA IBL Probe Pipeline
 
-This project prepares probe and calcium recordings as independent CEBRA
-sessions, trains them jointly with shared labels, and saves modality-specific
-embeddings in one learned latent space.
-
-The intended setup follows the CEBRA cross-modality use case: Neuropixels and
-two-photon calcium recordings do not need to be simultaneous or from the same
-animal. They should share a sampling variable, such as DINO features extracted
-from the same repeated video, behavioural variables, or time labels.
-
-## Expected Data Layout
-
-Each subject/session directory can contain one or more modality files:
+This project prepares IBL ONE API cache data for CEBRA. The current default
+target is one lab folder:
 
 ```text
-data/preprocessed/{subject_id}/
-  probe.npy       # optional, shape: (time, probe_features)
-  calcium.npy     # optional, shape: (time, calcium_features)
-  continuous_labels.npy  # recommended, shape: (time, label_features)
-  labels.npy             # accepted alias for continuous_labels.npy
-  discrete_labels.npy    # optional, shape: (time,)
-  timestamps.npy  # optional, shape: (time,)
-  metadata.json   # optional
+/content/drive/MyDrive/cebra_data/cache/churchlandlab/Subjects
 ```
 
-`probe.npy` and `calcium.npy` are loaded as separate sessions. They are not
-merged into one feature vector. For calcium movies, extract traces or image
-features first and save them as `calcium.npy`.
+Each valid session is discovered from:
 
-For CEBRA-Behaviour with video, save DINO frame features as
-`continuous_labels.npy`. If you also have class-like behavioural variables,
-save them as `discrete_labels.npy`; the training scripts will call CEBRA in the
-corresponding form: `fit(s)`, `fit(s, c)`, `fit(s, k)`, or `fit(s, c, k)`.
-For multi-session training, the scripts pass lists such as
-`fit([s_np, s_2p], [c_np, c_2p])`.
+```text
+{subject}/{date}/{number}/alf/
+  probe00/pykilosort/*/spikes.times.npy
+  probe00/pykilosort/*/spikes.clusters.npy
+  */_ibl_trials.table.pqt
+  */_ibl_trials.stimOnTrigger_times.npy
+```
 
-With `cebra==0.4.0`, mixed continuous+discrete labels are supported for a
-single session, but not for multi-session training. For the cross-modality
-joint model, use either shared continuous labels such as DINO features or shared
-discrete labels, not both at the same time.
+`sampler.py` bins spikes into `probe.npy` and builds CEBRA behaviour labels for
+the decision interval from stimulus onset to movement/response/feedback.
+
+## Standardized Output
+
+Running preparation creates one directory per subject/session:
+
+```text
+data/preprocessed/{subject}__{date}__{number}/
+  probe.npy              # binned spike counts, shape: (time, clusters)
+  continuous_labels.npy  # decision progress + trial variables
+  discrete_labels.npy    # choice/reward class per bin
+  timestamps.npy
+  cluster_ids.npy
+  metadata.json
+```
+
+`data/preprocessed/ibl_sessions.json` records all sessions that were parsed.
+The config uses `target_subjects: auto`, so validation/training scripts consume
+that summary automatically.
 
 ## Colab Flow
 
@@ -52,34 +50,10 @@ pip install -r requirements.txt
 python scripts/prepare_data.py --config configs/default_config.yaml
 python scripts/validate_preprocessed.py --config configs/default_config.yaml
 python scripts/train_unimodal.py --config configs/default_config.yaml --modality probe --labels auto
-python scripts/train_unimodal.py --config configs/default_config.yaml --modality calcium --labels auto
 python scripts/train_joint.py --config configs/default_config.yaml --labels auto
-python scripts/embed_subject.py --config configs/default_config.yaml --subject-id NP_MOUSE_001
+python scripts/embed_subject.py --config configs/default_config.yaml --modality probe
 ```
 
-The unimodal training commands are optional. They are useful for comparing
-probe-only, calcium-only, and cross-modality joint latent spaces.
-
-The main outputs are:
-
-```text
-models/checkpoints/joint_cebra_model.pt
-models/checkpoints/joint_training_sessions.json
-data/embeddings/{subject_id}/probe_embedding.npz
-data/embeddings/{subject_id}/calcium_embedding.npz
-```
-
-`joint_training_sessions.json` records the order of sessions passed to CEBRA.
-This is important when transforming a specific modality back through a trained
-multi-session model.
-
-## Manifest Option
-
-If the raw Drive layout is not simply `{drive_base_path}/raw/{subject_id}/`, add
-a manifest at `data/manifests/default_manifest.csv` with columns:
-
-```text
-subject_id,modality,path,target_name
-```
-
-Relative `path` values are resolved under `paths.drive_base_path`.
+For this IBL-only stage, `train_joint.py` means multi-session probe training
+across all discovered Churchland sessions. Later, calcium sessions can be added
+as another modality without concatenating features.

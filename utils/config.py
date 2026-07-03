@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import json
 
 import yaml
 
@@ -42,3 +43,19 @@ def configured_device(config: dict[str, Any]) -> str:
         return "cuda" if torch.cuda.is_available() else "cpu"
     except Exception:
         return "cpu"
+
+
+def configured_subject_ids(config: dict[str, Any]) -> list[str]:
+    dataset = config["dataset"]
+    target_subjects = dataset.get("target_subjects", [])
+    if target_subjects != "auto":
+        return list(target_subjects)
+
+    summary_path = resolve_project_path(config["paths"]["preprocessed_dir"]) / "ibl_sessions.json"
+    if not summary_path.exists():
+        raise FileNotFoundError(
+            f"target_subjects is 'auto', but no IBL session summary exists: {summary_path}. "
+            "Run scripts/prepare_data.py first."
+        )
+    sessions = json.loads(summary_path.read_text(encoding="utf-8"))
+    return [session["session_id"] for session in sessions]

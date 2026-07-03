@@ -6,3 +6,4 @@ pyyaml
 numpy
 pandas
 torch
+pyarrow

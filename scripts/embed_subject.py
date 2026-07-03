@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 import numpy as np
 
 from dataloaders.multimodal_dataset import build_session_windows, load_modality_session
-from utils.config import ensure_dir, load_config, resolve_project_path
+from utils.config import configured_subject_ids, ensure_dir, load_config, resolve_project_path
 
 
 def _transform_with_optional_session_id(model, features: np.ndarray, session_id: int):
@@ -42,7 +42,7 @@ def embed_subject(
 ) -> list[Path]:
     config = load_config(config_path)
     dataset_config = config["dataset"]
-    subject_id = subject_id or dataset_config["target_subjects"][0]
+    subject_id = subject_id or configured_subject_ids(config)[0]
     modalities = [modality] if modality else list(dataset_config["modalities"])
 
     preprocessed_dir = resolve_project_path(config["paths"]["preprocessed_dir"])
@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate CEBRA embeddings for one subject/modality.")
     parser.add_argument("--config", default="configs/default_config.yaml")
     parser.add_argument("--subject-id", default=None)
-    parser.add_argument("--modality", choices=("probe", "calcium"), default=None)
+    parser.add_argument("--modality", default=None)
     parser.add_argument("--model-path", default=None)
     return parser.parse_args()
 

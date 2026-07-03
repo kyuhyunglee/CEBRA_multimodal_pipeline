@@ -6,8 +6,6 @@ from pathlib import Path
 
 import numpy as np
 
-from .alignment import sliding_windows, zscore
-
 
 @dataclass(frozen=True)
 class ModalitySession:
@@ -27,6 +25,28 @@ def _as_2d(name: str, array: np.ndarray) -> np.ndarray:
     if array.ndim != 2:
         raise ValueError(f"{name} must be 1D or 2D, got shape {array.shape}.")
     return array
+
+
+def sliding_windows(array: np.ndarray, window_bins: int) -> np.ndarray:
+    array = _as_2d("array", array)
+    if window_bins < 1:
+        raise ValueError("window_bins must be >= 1.")
+    if len(array) < window_bins:
+        raise ValueError(
+            f"Cannot build {window_bins}-bin windows from {len(array)} samples."
+        )
+    return np.lib.stride_tricks.sliding_window_view(
+        array,
+        window_shape=window_bins,
+        axis=0,
+    ).transpose(0, 2, 1)
+
+
+def zscore(array: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    array = _as_2d("array", array).astype(np.float32, copy=False)
+    return (array - array.mean(axis=0, keepdims=True)) / (
+        array.std(axis=0, keepdims=True) + eps
+    )
 
 
 def _load_optional(path: Path) -> np.ndarray | None:

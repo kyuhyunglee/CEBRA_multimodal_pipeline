@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from dataloaders.multimodal_dataset import build_session_windows, load_modality_session
-from utils.config import load_config, resolve_project_path
+from utils.config import configured_subject_ids, load_config, resolve_project_path
 
 
 def validate_preprocessed(config_path: str) -> None:
@@ -24,7 +24,7 @@ def validate_preprocessed(config_path: str) -> None:
     found_sessions = 0
     errors = []
 
-    for subject_id in dataset_config["target_subjects"]:
+    for subject_id in configured_subject_ids(config):
         for modality in dataset_config["modalities"]:
             try:
                 session = load_modality_session(preprocessed_dir, subject_id, modality)

@@ -11,12 +11,16 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from dataloaders.sampler import (
+    DEFAULT_CONTINUOUS_COLUMNS,
+    discover_ibl_sessions,
+    preprocess_ibl_session,
+)
 from utils.config import ensure_dir, load_config, resolve_project_path
 
 
 STANDARD_FILES = (
     "probe.npy",
-    "calcium.npy",
     "labels.npy",
     "continuous_labels.npy",
     "discrete_labels.npy",
@@ -73,6 +77,33 @@ def prepare_data(config_path: str) -> None:
     drive_base = Path(paths["drive_base_path"])
     preprocessed_dir = ensure_dir(paths["preprocessed_dir"])
     manifest_path = resolve_project_path(paths["manifest_path"])
+
+    if dataset.get("provider") == "ibl_one":
+        lab_subjects_dir = Path(dataset.get("lab_subjects_dir", drive_base))
+        probe_name = dataset.get("probe_name", "probe00")
+        continuous_columns = tuple(
+            dataset.get("continuous_columns", DEFAULT_CONTINUOUS_COLUMNS)
+        )
+        sessions = discover_ibl_sessions(lab_subjects_dir, probe_name=probe_name)
+        if not sessions:
+            raise FileNotFoundError(f"No valid IBL sessions found under {lab_subjects_dir}.")
+
+        written = []
+        for session in sessions:
+            target_dir = preprocessed_dir / session.session_id
+            metadata = preprocess_ibl_session(
+                files=session,
+                output_dir=target_dir,
+                bin_size=dataset["bin_size"],
+                continuous_columns=continuous_columns,
+            )
+            written.append(metadata)
+
+        summary_path = preprocessed_dir / "ibl_sessions.json"
+        summary_path.write_text(json.dumps(written, indent=2), encoding="utf-8")
+        print(f"Prepared {len(written)} IBL session(s) under: {preprocessed_dir}")
+        print(f"Session summary: {summary_path}")
+        return
 
     if manifest_path.exists():
         _prepare_from_manifest(manifest_path, drive_base, preprocessed_dir)
