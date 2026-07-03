@@ -18,7 +18,58 @@ class SkipConnectionBlock(nn.Module):
         # 논문 구조에 따라 GELU 적용 후 skip connection 더하기
         x = F.gelu(x) 
         return x + residual
+    
+class CalciumEncoder(nn.Module):
+    """
+    칼슘 이미징 데이터를 위한 인코더 (Receptive field: 10)
+    - 입력 Shape: (Batch, Neurons, Time=10)
+    """
+    def __init__(self, input_neurons, hidden_dim=64, latent_dim=16):
+        super().__init__()
+        
+        # 1. 첫 번째 레이어 (개체별/영역별 학습 필요)
+        self.input_layer = nn.Conv1d(input_neurons, hidden_dim, kernel_size=2, padding=0)
+        
+        # 2. 공통 뼈대 (Pre-trained weights 로드 타겟)
+        self.shared_block1 = SkipConnectionBlock(hidden_dim)
+        self.shared_block2 = SkipConnectionBlock(hidden_dim)
+        self.shared_block3 = SkipConnectionBlock(hidden_dim)
+        self.shared_final = nn.Conv1d(hidden_dim, latent_dim, kernel_size=3, padding=1)
 
+    def forward(self, x):
+        # 파이토치 Conv1d를 위해 (Batch, Time, Neurons) -> (Batch, Neurons, Time)으로 변경
+        x = x.transpose(1, 2)
+        
+        # 1. 첫 번째 레이어 적용
+        x = F.gelu(self.input_layer(x))
+        
+        # 2. Shared Backbone 적용
+        x = self.shared_block1(x)
+        x = self.shared_block2(x)
+        x = self.shared_block3(x)
+        
+        # 3. Final Projection
+        x = self.shared_final(x)
+        
+        # 시계열 차원 평균 및 정규화
+        x = torch.mean(x, dim=2)
+        return F.normalize(x, p=2, dim=1)
+
+    def load_pretrained_backbone(self, weight_path, freeze=False):
+        # ProbeEncoder와 동일한 가중치 이식 로직
+        pretrained_dict = torch.load(weight_path)
+        model_dict = self.state_dict()
+        
+        transfer_dict = {k: v for k, v in pretrained_dict.items() 
+                         if 'shared_' in k and k in model_dict}
+        
+        model_dict.update(transfer_dict)
+        self.load_state_dict(model_dict)
+        
+        if freeze:
+            for name, param in self.named_parameters():
+                if 'shared_' in name:
+                    param.requires_grad = False
 
 class ProbeEncoder(nn.Module):
     """
