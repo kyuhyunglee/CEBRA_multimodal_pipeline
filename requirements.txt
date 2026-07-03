@@ -3,3 +3,6 @@ cebra==0.4.0
 
 # Experiment Configuration
 pyyaml
+numpy
+pandas
+torch

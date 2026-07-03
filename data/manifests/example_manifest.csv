@@ -1,0 +1,7 @@
+subject_id,modality,path,target_name
+NP_MOUSE_001,probe,raw/NP_MOUSE_001/probe.npy,probe.npy
+NP_MOUSE_001,continuous_labels,raw/NP_MOUSE_001/dino_features.npy,continuous_labels.npy
+NP_MOUSE_001,timestamps,raw/NP_MOUSE_001/timestamps.npy,timestamps.npy
+TP_MOUSE_001,calcium,raw/TP_MOUSE_001/calcium.npy,calcium.npy
+TP_MOUSE_001,continuous_labels,raw/TP_MOUSE_001/dino_features.npy,continuous_labels.npy
+TP_MOUSE_001,timestamps,raw/TP_MOUSE_001/timestamps.npy,timestamps.npy

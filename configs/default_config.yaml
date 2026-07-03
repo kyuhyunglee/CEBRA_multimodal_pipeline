@@ -1,19 +1,52 @@
-dataset:
-  drive_base_path: '/content/drive/MyDrive/cebra_data/cache'
-  provider: 'churchlandlab'
-  target_subjects:
-    - 'CSHL045'
-  bin_size: 0.025
+paths:
+  # Colab default. In VSCode, override this with a local path or another config.
+  drive_base_path: /content/drive/MyDrive/cebra_data
+  raw_dir: data/raw
+  preprocessed_dir: data/preprocessed
+  manifest_path: data/manifests/default_manifest.csv
+  embedding_dir: data/embeddings
+  model_dir: models/checkpoints
 
-sampler:
-  time_window: 10   # 250ms receptive field (10 * 0.025)
-  time_shift: 0
+dataset:
+  provider: lab
+  target_subjects:
+    - NP_MOUSE_001
+    - TP_MOUSE_001
+  modalities:
+    - probe
+    - calcium
+  bin_size: 0.025
+  time_window_bins: 10
+  time_shift_bins: 0
+  continuous_label_file: continuous_labels.npy
+  discrete_label_file: discrete_labels.npy
+  save_dtype: float32
+
+preprocessing:
+  # Expected standardized per-subject files:
+  #   probe.npy      shape: (time, probe_features), optional when subject has probe data
+  #   calcium.npy    shape: (time, calcium_features), optional when subject has calcium data
+  #   continuous_labels.npy shape: (time, label_features), e.g. DINO video labels
+  #   labels.npy            legacy alias for continuous_labels.npy
+  #   discrete_labels.npy   shape: (time,), optional class/trial labels
+  #   timestamps.npy shape: (time,), optional
+  copy_from_drive: true
+  require_labels: true
 
 model:
-  architecture: 'offset10-model'
+  architecture: offset10-model
+  hidden_dim: 64
+  latent_dim: 16
+  output_dimension: 8
+  temperature: 1.0
+  distance: cosine
+
+training:
   batch_size: 512
   learning_rate: 0.0003
   max_iterations: 2000
-  output_dimension: 8
-  temperature: 1.0
-  distance: 'cosine'
+  # "behavior" uses shared labels such as DINO video features.
+  # "time" can be used for CEBRA-Time style training when labels are omitted.
+  conditional: behavior
+  device: auto
+  seed: 0
