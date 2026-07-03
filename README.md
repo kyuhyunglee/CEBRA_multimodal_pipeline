@@ -25,7 +25,7 @@ the decision interval from stimulus onset to movement/response/feedback.
 Running preparation creates one directory per subject/session:
 
 ```text
-data/preprocessed/{subject}__{date}__{number}/
+/content/drive/MyDrive/cebra_data/preprocessed/{subject}__{date}__{number}/
   probe.npy              # binned spike counts, shape: (time, clusters)
   continuous_labels.npy  # decision progress + trial variables
   discrete_labels.npy    # choice/reward class per bin
@@ -34,9 +34,13 @@ data/preprocessed/{subject}__{date}__{number}/
   metadata.json
 ```
 
-`data/preprocessed/ibl_sessions.json` records all sessions that were parsed.
-The config uses `target_subjects: auto`, so validation/training scripts consume
-that summary automatically.
+`/content/drive/MyDrive/cebra_data/preprocessed/ibl_sessions.json` records all
+sessions that were parsed. The config uses `target_subjects: auto`, so
+validation/training scripts consume that summary automatically.
+
+By default, completed sessions are skipped on reruns (`preprocessing.skip_existing: true`).
+This makes Colab runs resumable and keeps large preprocessed arrays on Google
+Drive instead of the temporary Colab disk.
 
 ## Colab Flow
 

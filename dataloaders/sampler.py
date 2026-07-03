@@ -17,6 +17,10 @@ DEFAULT_CONTINUOUS_COLUMNS = (
 )
 
 
+def _log(message: str) -> None:
+    print(f"[sampler] {message}", flush=True)
+
+
 @dataclass(frozen=True)
 class IBLSessionFiles:
     subject_id: str
@@ -203,14 +207,27 @@ def preprocess_ibl_session(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    _log(f"Loading spike times: {files.spike_times_path}")
     spike_times = np.load(files.spike_times_path)
+    _log(f"Loaded spike times shape={spike_times.shape}, dtype={spike_times.dtype}")
+    _log(f"Loading spike clusters: {files.spike_clusters_path}")
     spike_clusters = np.load(files.spike_clusters_path)
+    _log(f"Loaded spike clusters shape={spike_clusters.shape}, dtype={spike_clusters.dtype}")
+    _log(f"Loading trials table: {files.trials_table_path}")
     trials = pd.read_parquet(files.trials_table_path)
+    _log(f"Loaded trials shape={trials.shape}")
     stim_on_trigger = (
         np.load(files.stim_on_trigger_path)
         if files.stim_on_trigger_path is not None
         else None
     )
+    if files.stim_on_trigger_path is not None:
+        _log(
+            f"Loaded stimOnTrigger shape={stim_on_trigger.shape} "
+            f"from {files.stim_on_trigger_path}"
+        )
+    else:
+        _log("No stimOnTrigger file found; using trial table timing columns.")
 
     start_times = _trial_start_times(trials, stim_on_trigger)
     end_times = _trial_end_times(trials)
@@ -222,6 +239,7 @@ def preprocess_ibl_session(
     )
     start_time = float(np.nanmin(finite_times)) if len(finite_times) else None
     end_time = float(np.nanmax(finite_times)) if len(finite_times) else None
+    _log(f"Binning spikes with bin_size={bin_size}, start_time={start_time}, end_time={end_time}")
 
     probe, timestamps, clusters = bin_spikes(
         spike_times=spike_times,
@@ -230,18 +248,26 @@ def preprocess_ibl_session(
         start_time=start_time,
         end_time=end_time,
     )
+    _log(
+        f"Binned probe shape={probe.shape}, timestamps shape={timestamps.shape}, "
+        f"clusters={len(clusters)}"
+    )
+    _log(f"Building behavior labels with columns={continuous_columns}")
     continuous, discrete = build_behavior_labels(
         trials=trials,
         timestamps=timestamps,
         stim_on_trigger=stim_on_trigger,
         continuous_columns=continuous_columns,
     )
+    _log(f"Built continuous labels shape={continuous.shape}, discrete labels shape={discrete.shape}")
 
+    _log(f"Saving arrays to: {output_dir}")
     np.save(output_dir / "probe.npy", probe)
     np.save(output_dir / "continuous_labels.npy", continuous)
     np.save(output_dir / "discrete_labels.npy", discrete)
     np.save(output_dir / "timestamps.npy", timestamps)
     np.save(output_dir / "cluster_ids.npy", clusters)
+    _log("Saved probe, labels, timestamps, and cluster ids.")
 
     metadata = {
         "subject_id": files.subject_id,
@@ -264,4 +290,5 @@ def preprocess_ibl_session(
         json.dumps(metadata, indent=2),
         encoding="utf-8",
     )
+    _log(f"Wrote metadata: {output_dir / 'metadata.json'}")
     return metadata

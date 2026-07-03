@@ -2,10 +2,10 @@ paths:
   # Colab default. In VSCode, override this with a local path or another config.
   drive_base_path: /content/drive/MyDrive/cebra_data
   raw_dir: data/raw
-  preprocessed_dir: data/preprocessed
+  preprocessed_dir: /content/drive/MyDrive/cebra_data/preprocessed
   manifest_path: data/manifests/default_manifest.csv
-  embedding_dir: data/embeddings
-  model_dir: models/checkpoints
+  embedding_dir: /content/drive/MyDrive/cebra_data/embeddings
+  model_dir: /content/drive/MyDrive/cebra_data/models/checkpoints
 
 dataset:
   provider: ibl_one
@@ -35,6 +35,7 @@ preprocessing:
   #   timestamps.npy shape: (time,), optional
   copy_from_drive: true
   require_labels: true
+  skip_existing: true
 
 model:
   architecture: offset10-model
