@@ -61,3 +61,15 @@ python scripts/embed_subject.py --config configs/default_config.yaml --modality 
 For this IBL-only stage, `train_joint.py` means multi-session probe training
 across all discovered Churchland sessions. Later, calcium sessions can be added
 as another modality without concatenating features.
+
+## Multi-Modality Training Wrappers
+
+`scripts/train_discovery.py` and `scripts/train_hypothesis.py` are thin
+wrappers around `scripts/train_joint.py` for multi-modality training runs. They
+use `configs/default_config.yaml` and are intended for cases where the config
+contains at least two modalities, such as `probe` and `calcium`.
+
+- `train_discovery.py` runs joint training without behaviour labels
+  (`use_labels=False`).
+- `train_hypothesis.py` runs joint training with behaviour labels
+  (`use_labels=True`).
